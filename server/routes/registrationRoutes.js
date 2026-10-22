@@ -11,39 +11,12 @@ const {
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-router.post(
-  "/:eventId",
-  protect,
-  authorize("student"),
-  registerForEvent
-);
+// IMPORTANT: static paths before parameterised paths to avoid shadowing
+router.get("/my",           protect, authorize("student"),           getMyRegistrations);
+router.get("/event/:eventId", protect, authorize("organizer","admin"), getEventParticipants);
 
-router.patch(
-  "/:registrationId/cancel",
-  protect,
-  authorize("student"),
-  cancelRegistration
-);
-
-router.get(
-  "/my",
-  protect,
-  authorize("student"),
-  getMyRegistrations
-);
-
-router.get(
-  "/event/:eventId",
-  protect,
-  authorize("organizer", "admin"),
-  getEventParticipants
-);
-
-router.patch(
-  "/:registrationId/status",
-  protect,
-  authorize("organizer", "admin"),
-  updateRegistrationStatus
-);
+router.post("/:eventId",             protect, authorize("student"),           registerForEvent);
+router.patch("/:registrationId/cancel", protect, authorize("student"),        cancelRegistration);
+router.patch("/:registrationId/status", protect, authorize("organizer","admin"), updateRegistrationStatus);
 
 module.exports = router;

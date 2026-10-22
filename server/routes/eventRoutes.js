@@ -11,28 +11,13 @@ const {
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-router.get("/", getEvents);
+// Public routes
+router.get("/",    getEvents);
 router.get("/:id", getEventById);
 
-router.post(
-  "/",
-  protect,
-  authorize("organizer", "admin"),
-  createEvent
-);
-
-router.put(
-  "/:id",
-  protect,
-  authorize("organizer", "admin"),
-  updateEvent
-);
-
-router.delete(
-  "/:id",
-  protect,
-  authorize("organizer", "admin"),
-  deleteEvent
-);
+// Organizer / admin only
+router.post(   "/",    protect, authorize("organizer", "admin"), createEvent);
+router.put(    "/:id", protect, authorize("organizer", "admin"), updateEvent);
+router.delete( "/:id", protect, authorize("organizer", "admin"), deleteEvent);
 
 module.exports = router;
