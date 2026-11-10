@@ -1,3 +1,5 @@
+https://college-event-management-dun.vercel.app/
+
 # College Event Management System
 
 A full-stack MERN application for managing college events, registrations,
