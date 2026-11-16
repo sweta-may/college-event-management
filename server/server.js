@@ -14,19 +14,10 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS — supports comma-separated origins in CLIENT_URL or allows all if not specified
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(",").map((o) => o.trim())
-  : null;
-
+// CORS — allows all origins including Vercel
 app.use(
   cors({
-    origin(origin, cb) {
-      if (!origin || !allowedOrigins || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
-        return cb(null, true);
-      }
-      cb(null, true); // Fallback to allow Vercel dynamic preview domains
-    },
+    origin: true,
     credentials: true,
   })
 );
@@ -38,18 +29,25 @@ app.get("/", (req, res) => {
   res.json({ message: "College Event Management API", status: "ok" });
 });
 
-// API Routes
+// API Routes — mounted on both /api/* and /* so it works whether Vercel includes /api or not!
 app.use("/api/auth", authRoutes);
+app.use("/auth", authRoutes);
+
 app.use("/api/events", eventRoutes);
+app.use("/events", eventRoutes);
+
 app.use("/api/registrations", registrationRoutes);
+app.use("/registrations", registrationRoutes);
+
 app.use("/api/admin", adminRoutes);
+app.use("/admin", adminRoutes);
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "API route not found" });
+  res.status(404).json({ message: `API route not found: ${req.method} ${req.originalUrl}` });
 });
 
-// Global error handler (4 params required by Express)
+// Global error handler
 app.use((err, req, res, next) => {
   console.error("Server error:", err);
   res.status(err.status || 500).json({
