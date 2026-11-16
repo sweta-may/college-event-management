@@ -50,9 +50,9 @@ function StudentDashboard({ user }) {
         </div>
         <div className="tip-card">
           <span>✦</span>
-          <h3>Make your mark.</h3>
-          <p>Have an event idea? Bring your community together.</p>
-          <Link className="button button-dark" to="/events">See what&apos;s possible</Link>
+          <h3>Want to host an event?</h3>
+          <p>You are logged in as a <strong>Student</strong>. Students can explore and register for events. To create and host events, sign up or log in as an <strong>Event Organizer</strong>.</p>
+          <Link className="button button-dark" to="/signup">Create Organizer Account</Link>
         </div>
       </div>
     </>
@@ -63,8 +63,22 @@ function StudentDashboard({ user }) {
 function OrganizerDashboard({ user }) {
   const [myEvents, setMyEvents] = useState([]);
   const [loading,  setLoading]  = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [form, setForm] = useState({
+    title: '',
+    category: 'technical',
+    venue: '',
+    capacity: 100,
+    startDate: '',
+    endDate: '',
+    registrationDeadline: '',
+    description: '',
+  });
 
-  useEffect(() => {
+  const loadEvents = () => {
+    setLoading(true);
     eventsApi.list({ limit: 50 })
       .then((res) => {
         const uid   = user.id ?? user._id;
@@ -73,7 +87,39 @@ function OrganizerDashboard({ user }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadEvents();
   }, [user]);
+
+  const handleChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await eventsApi.create(form);
+      alert('Event created successfully!');
+      setShowForm(false);
+      setForm({
+        title: '',
+        category: 'technical',
+        venue: '',
+        capacity: 100,
+        startDate: '',
+        endDate: '',
+        registrationDeadline: '',
+        description: '',
+      });
+      loadEvents();
+    } catch (err) {
+      setError(err.response?.data?.message ?? 'Failed to create event.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const totalReg = myEvents.reduce((a, e) => a + (e.registeredCount ?? 0), 0);
   const active   = myEvents.filter((e) => ['upcoming','ongoing'].includes(e.status)).length;
@@ -88,21 +134,99 @@ function OrganizerDashboard({ user }) {
       <div className="stats-grid">
         {stats.map(([v, l]) => <div className="stat-card" key={l}><strong>{v}</strong><span>{l}</span></div>)}
       </div>
+
+      {showForm && (
+        <div style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: '12px', padding: '28px', marginBottom: '32px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ margin: 0, fontSize: '20px' }}>Create New Campus Event</h2>
+            <button type="button" className="button button-ghost" onClick={() => setShowForm(false)}>✕ Close</button>
+          </div>
+          {error && <p style={{ color: '#b45d4d', fontSize: '13px', marginBottom: '16px' }}>{error}</p>}
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Event Title *</label>
+              <input required name="title" placeholder="e.g. National Level Hackathon 2026" value={form.title} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Category *</label>
+              <select name="category" value={form.category} onChange={handleChange}>
+                <option value="technical">Technical</option>
+                <option value="cultural">Cultural</option>
+                <option value="sports">Sports</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Venue *</label>
+              <input required name="venue" placeholder="e.g. Main Auditorium / Lab 3" value={form.venue} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Capacity (Max Attendees) *</label>
+              <input required type="number" min="1" name="capacity" value={form.capacity} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Registration Deadline *</label>
+              <input required type="datetime-local" name="registrationDeadline" value={form.registrationDeadline} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Start Date & Time *</label>
+              <input required type="datetime-local" name="startDate" value={form.startDate} onChange={handleChange} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>End Date & Time *</label>
+              <input required type="datetime-local" name="endDate" value={form.endDate} onChange={handleChange} />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Description *</label>
+              <textarea required name="description" rows="3" placeholder="Provide event schedule, rules, guidelines, eligibility..." value={form.description} onChange={handleChange} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--line)', fontFamily: 'inherit' }} />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <button className="button button-primary" type="submit" disabled={submitting}>
+                {submitting ? 'Creating Event...' : 'Publish Event →'}
+              </button>
+              <button className="button button-ghost" type="button" onClick={() => setShowForm(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="dashboard-content">
         <div>
-          <div className="section-heading compact"><h2>Your events</h2></div>
+          <div className="section-heading compact" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Your events</h2>
+            <button type="button" className="button button-primary" onClick={() => setShowForm(true)}>
+              + Create New Event
+            </button>
+          </div>
           {loading
             ? <p style={{ color: 'var(--muted)' }}>Loading…</p>
             : myEvents.length > 0
-              ? <EventGrid events={myEvents.slice(0, 4)} />
-              : <p style={{ color: 'var(--muted)' }}>You haven&apos;t created any events yet.</p>
+              ? <EventGrid events={myEvents} />
+              : (
+                <div className="empty-state" style={{ marginTop: '20px' }}>
+                  <h3>No events created yet</h3>
+                  <p>Click &quot;+ Create New Event&quot; above to publish your first campus event.</p>
+                </div>
+              )
           }
         </div>
         <div className="tip-card">
           <span>✦</span>
-          <h3>Grow your event.</h3>
-          <p>Use the API to publish events and manage attendees.</p>
-          <Link className="button button-dark" to="/events">Browse events</Link>
+          <h3>Organizer Hub</h3>
+          <p>Create technical, cultural, or sports events, manage capacity, and track attendees.</p>
+          <button type="button" className="button button-dark" onClick={() => setShowForm(true)}>
+            + Create New Event
+          </button>
         </div>
       </div>
     </>
