@@ -14,16 +14,18 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS — supports comma-separated origins in CLIENT_URL
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-  .split(",")
-  .map((o) => o.trim());
+// CORS — supports comma-separated origins in CLIENT_URL or allows all if not specified
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(",").map((o) => o.trim())
+  : null;
 
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      cb(new Error("Not allowed by CORS"));
+      if (!origin || !allowedOrigins || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+        return cb(null, true);
+      }
+      cb(null, true); // Fallback to allow Vercel dynamic preview domains
     },
     credentials: true,
   })
@@ -48,31 +50,23 @@ app.use((req, res) => {
 });
 
 // Global error handler (4 params required by Express)
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err.stack || err.message);
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({
-    message:
-      process.env.NODE_ENV === "production"
-        ? "An unexpected error occurred"
-        : err.message || "Internal server error",
+  console.error("Server error:", err);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
   });
 });
 
 const PORT = process.env.PORT || 5000;
-
-async function startServer() {
-  try {
-    await connectDB();
-    // Listen on all interfaces so client on another subnet can reach it
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server running on port ${PORT}`);
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
     });
-  } catch (error) {
-    console.error("Server startup failed:", error.message);
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB, exiting:", err);
     process.exit(1);
-  }
-}
+  });
 
-startServer();
+module.exports = app;

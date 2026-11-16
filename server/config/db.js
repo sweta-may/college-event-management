@@ -4,7 +4,8 @@ const connectDB = async () => {
   try {
     const uri =
       process.env.MONGO_URI ||
-      "mongodb://127.0.0.1:27017/college_event_management";
+      process.env.MONGODB_URI ||
+      "mongodb+srv://swetasakthivel5_db_user:WxcHtBksA0UfbyXe@cluster0.x8bnj3o.mongodb.net/college_event_management?retryWrites=true&w=majority";
     await mongoose.connect(uri);
     const dbName = mongoose.connection.name;
     console.log(`MongoDB connected — database: ${dbName}`);

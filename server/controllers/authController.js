@@ -2,10 +2,12 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const JWT_SECRET = process.env.JWT_SECRET || "college_event_secret_jwt_key_2026";
+
 const createToken = (user) =>
   jwt.sign(
     { id: user._id.toString(), role: user.role },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
 
